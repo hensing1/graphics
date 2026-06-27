@@ -1,0 +1,23 @@
+CompileFlags:
+  Add: [-xc]
+Diagnostics:
+  ClangTidy:
+    Remove: misc-definitions-in-headers
+---
+If:
+  PathMatch: src/color\.h
+
+CompileFlags:
+  Add: [-DIMPL_COLOR_H]
+---
+If:
+  PathMatch: src/matrix\.h
+
+CompileFlags:
+  Add: [-DIMPL_MATRIX_H]
+---
+If:
+  PathMatch: src/rasterize\.h
+
+CompileFlags:
+  Add: [-DIMPL_RASTERIZE_H]

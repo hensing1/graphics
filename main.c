@@ -8,10 +8,12 @@
 #define IMPL_COLOR_H
 #define IMPL_MATRIX_H
 #define IMPL_RASTERIZE_H
+#define IMPL_NOISE_H
 
 #include "src/color.h"
 #include "src/matrix.h"
 #include "src/rasterize.h"
+#include "src/noise.h"
 
 /// point lerp
 point_t plerp(point_t p1, point_t p2, float u) {
@@ -142,31 +144,30 @@ void save_to_ppm(image_t image, char* filename) {
 }
 
 int main(int argc, char *argv[]) {
-  char* filename = "hsv_bar.ppm";
-  // int scale = 800;
-  // int width = 4 * scale;
-  // int height = 3 * scale;
-
-  int width = 200;
+  int width = 276;
   int height = 30;
 
   rgb_t* pixels = (rgb_t*)malloc(sizeof(rgb_t) * width * height);
   image_t image = {width, height, pixels};
   set_uniform(image, BLACK);
-  // mandelbrot(image);
 
-  hsv_t col = (hsv_t){ 0, 1, 1 };
-  for (int i = 0; i < width; i++) {
-    col.h = ((float) i) / width;
-    rgb_t col_rgb = hsv2rgb(col);
-    for (int j = 0; j < height; j++) {
-      set_pixel(image, i, j, col_rgb);
-    }
+  char filename[21];
+
+  size_t line_y = 19;
+  draw_line(image, (point_t){10, line_y-3}, (point_t){10, line_y+3}, WHITE);
+  draw_line(image, (point_t){width-10, line_y-3}, (point_t){width-10, line_y+3}, WHITE);
+  draw_line(image, (point_t){10, line_y}, (point_t){width-10, line_y}, WHITE);
+
+  for (int i = 0; i < 32; i++) {
+    float sample = radicalInverse(2, i);
+    size_t x = 10 + sample * (width - 20);
+    draw_cross(image, x, line_y - 10, RED);
+    snprintf(filename, 19, "rad_inverse_%02i.ppm", i);
+    save_to_ppm(image, filename);
+    printf("Written %s\n", filename);
   }
 
-  save_to_ppm(image, filename);
   free(image.pixels);
-  printf("Written %s\n", filename);
 
   return 0;
 }

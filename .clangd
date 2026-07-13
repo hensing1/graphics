@@ -18,6 +18,10 @@ CompileFlags:
 ---
 If:
   PathMatch: src/rasterize\.h
-
 CompileFlags:
   Add: [-DIMPL_RASTERIZE_H]
+---
+If:
+  PathMatch: src/noise\.h
+CompileFlags:
+  Add: [-DIMPL_NOISE_H]

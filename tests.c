@@ -109,10 +109,36 @@ void test_mat_qr() {
     mat_free(col3);
 }
 
+void test2_mat_qr() {
+    matrix_t m = mat_zero(1, 8);
+    for (int i = 0; i < 8; i++) {
+        mat_set(m, 0, i, i);
+    }
+    m.height = m.data_height = 4;
+    m.width = m.data_width = 2;
+    mat_print(m);
+
+    matrix_t r = mat_clone(m);
+    matrix_t q = mat_qr(r, true);
+    mat_print(q);
+    mat_print(r);
+    matrix_t res = mat_mul(q, r);
+    mat_print(res);
+
+    mat_free(m);
+    mat_free(q);
+    mat_free(r);
+    mat_free(res);
+}
+
 void test_radical_inverse() {
     for (int i = 0; i <= 16; i++) {
         printf("Phi(%i) = %f\n", i, radicalInverse(2, i));
     }
+}
+
+void test_modular_exp() {
+    assert(modular_exp(2, 5342, 22399099) == 3507239);
 }
 
 int main() {
@@ -122,4 +148,6 @@ int main() {
     // do_test(test_mat_submatrix);
     do_test(test_mat_norm);
     do_test(test_mat_qr);
+    // do_test(test2_mat_qr);
+    do_test(test_modular_exp);
 }

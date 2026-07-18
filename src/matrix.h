@@ -29,6 +29,7 @@ typedef struct {
     m.data[m.data_width *  ((i)+m.offset_i) + ((j)+m.offset_j)])
 #define mat_set(m, i, j, val) (m.data[m.data_width * ((i)+m.offset_i) + ((j)+m.offset_j)] = (val))
 
+matrix_t mat_init(size_t height, size_t width, float* data, bool use_ref_counter);
 matrix_t mat_zero(size_t height, size_t width);
 matrix_t mat_full(size_t height, size_t width, float v);
 matrix_t mat_eye(size_t height, size_t width);
@@ -49,6 +50,18 @@ float mat_l2_squared(matrix_t m);
 inline float mat_l2(matrix_t m);
 float mat_trace(matrix_t m);
 
+/*
+ * Turns `m` into an upper triangular matrix r.
+ * If `compute_q` is set, also returns matrix orthogonal matrix q such that `m` = q * r.
+ */
+matrix_t mat_qr(matrix_t m, bool compute_q);
+
+/*
+ * Returns the solution x for `y` = `r` * x.
+ * Requires that `r` is an upper triangular matrix.
+ */
+matrix_t back_substitute(matrix_t r, matrix_t y);
+
 void mat_print(matrix_t m);
 
 void mat_free(matrix_t m);
@@ -57,9 +70,34 @@ void mat_free(matrix_t m);
 
 #ifdef IMPL_MATRIX_H
 
+#ifndef IMPL_MATRIX_H_DONE
+#define IMPL_MATRIX_H_DONE
+
+matrix_t mat_init(size_t height, size_t width, float* data, bool use_ref_counter) {
+    int* ref_counter;
+    if (use_ref_counter) {
+        ref_counter = malloc(sizeof(int));
+        *ref_counter = 1;
+    }
+    else {
+        ref_counter = NULL;
+    }
+    return (matrix_t) {
+        .height      = height,
+        .width       = width,
+        .data        = data,
+        .data_height = height,
+        .data_width  = width,
+        .offset_i    = 0,
+        .offset_j    = 0,
+        .transposed  = false,
+        .ref_counter = ref_counter
+    };
+
+}
+
 matrix_t mat_zero(size_t height, size_t width) {
-  float* values;
-  values = (float*)calloc(sizeof(float), height * width);
+  float* values = calloc(sizeof(float), height * width);
   if (!values) {
     char* err;
     asprintf(&err, "Could not allocate matrix of size %lux%lu", height, width);
@@ -67,19 +105,7 @@ matrix_t mat_zero(size_t height, size_t width) {
     free(err);
     exit(EXIT_FAILURE);
   }
-  int* ref_counter = malloc(sizeof(int));
-  *ref_counter = 1;
-  return (matrix_t) {
-      .height      = height,
-      .width       = width,
-      .data        = values,
-      .data_height = height,
-      .data_width  = width,
-      .offset_i    = 0,
-      .offset_j    = 0,
-      .transposed  = false,
-      .ref_counter = ref_counter
-  };
+  return mat_init(height, width, values, true);
 }
 
 matrix_t mat_full(size_t height, size_t width, float v) {
@@ -122,7 +148,9 @@ matrix_t mat_submatrix(matrix_t m, size_t start_i, size_t end_i, size_t start_j,
     assert(end_i <= m.offset_i + m.height);
     assert(end_j <= m.offset_j + m.width);
 
-    (*m.ref_counter)++;
+    if (m.ref_counter) {
+        (*m.ref_counter)++;
+    }
     return (matrix_t) {
         .height      = end_i - start_i,
         .width       = end_j - start_j,
@@ -290,6 +318,21 @@ matrix_t mat_qr(matrix_t m, bool compute_q) {
     return q_t;
 }
 
+matrix_t back_substitute(matrix_t r, matrix_t y) {
+    assert(r.height == y.height);
+    assert(r.height >= r.width);
+
+    matrix_t solution = mat_zero(r.width, 1);
+    for (int i = r.width-1; i >= 0; i--) {
+        float sum = 0;
+        for (int j = r.width-1; j > i; j--) {
+            sum += mat_val(solution, j, 0) * mat_val(r, i, j);
+        }
+        mat_set(solution, i, 0, (mat_val(y, i, 0) - sum) / mat_val(r, i, i));
+    }
+    return solution;
+}
+
 void mat_print(matrix_t m) {
     printf("---\n");
   for (size_t i = 0; i < m.height; i++) {
@@ -302,6 +345,7 @@ void mat_print(matrix_t m) {
 }
 
 void mat_free(matrix_t m) {
+    if (!m.ref_counter) {return;}
     (*m.ref_counter)--;
     if (*m.ref_counter <= 0) {  // implicit check against double free
         free(m.ref_counter);
@@ -309,4 +353,5 @@ void mat_free(matrix_t m) {
     }
 }
 
+#endif /* #ifndef IMPL_MATRIX_H_DONE */
 #endif /* #ifdef IMPL_MATRIX_H */

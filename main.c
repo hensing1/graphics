@@ -10,6 +10,7 @@
 #define IMPL_RASTERIZE_H
 #define IMPL_NOISE_H
 
+#include "src/automata.h"
 #include "src/color.h"
 #include "src/matrix.h"
 #include "src/rasterize.h"
@@ -144,30 +145,44 @@ void save_to_ppm(image_t image, char* filename) {
 }
 
 int main(int argc, char *argv[]) {
-  int width = 276;
-  int height = 30;
+  const int width = 325;
+  const int height = 600;
+
+  const uint8_t rule = 31;
+
+  char filename[16];
+  snprintf(filename, 16, "wolfberd%03d.ppm", rule);
 
   rgb_t* pixels = (rgb_t*)malloc(sizeof(rgb_t) * width * height);
   image_t image = {width, height, pixels};
   set_uniform(image, BLACK);
 
-  char filename[21];
+  bool* state = malloc(sizeof(bool) * (width + 2));
+  bool* next_state = malloc(sizeof(bool) * (width + 2));
+  state[width / 2 + 1] = true;
+  for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+          if (state[x + 1]) {
+              set_pixel(image, x, y, WHITE);
+          }
+      }
+      for (int x = 1; x < width+1; x++) {
+          next_state[x] = wolfberd((state + x), rule);
+      }
+      bool* tmp = state;
+      state = next_state;
+      next_state = tmp;
 
-  size_t line_y = 19;
-  draw_line(image, (point_t){10, line_y-3}, (point_t){10, line_y+3}, WHITE);
-  draw_line(image, (point_t){width-10, line_y-3}, (point_t){width-10, line_y+3}, WHITE);
-  draw_line(image, (point_t){10, line_y}, (point_t){width-10, line_y}, WHITE);
-
-  for (int i = 0; i < 32; i++) {
-    float sample = radicalInverse(2, i);
-    size_t x = 10 + sample * (width - 20);
-    draw_cross(image, x, line_y - 10, RED);
-    snprintf(filename, 19, "rad_inverse_%02i.ppm", i);
-    save_to_ppm(image, filename);
-    printf("Written %s\n", filename);
+      state[0] = state[width];
+      state[width + 1] = state[1];
   }
+  free(state);
+  free(next_state);
 
+  save_to_ppm(image, filename);
   free(image.pixels);
+
+  printf("Written %s.\n", filename);
 
   return 0;
 }

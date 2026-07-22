@@ -15,6 +15,7 @@ float radicalInverse(int base, int num);
 void seed_prng(uint64_t seed);
 void timeseed_prng();
 uint64_t prng_next();
+uint64_t randInt(uint64_t min, uint64_t max);
 
 #endif /* #ifndef NOISE_H */
 
@@ -61,6 +62,12 @@ void seed_prng(uint64_t seed) {
     _xorshift_state = seed;
 }
 
+void timeseed_prng() {
+    struct timeval now;
+    gettimeofday(&now, (void*) 0);
+    seed_prng(now.tv_usec);
+}
+
 uint64_t prng_next() {
     // uint64_t mask = (1 << num_bits) - 1;
     // _blum_micali_state = modular_exp2(
@@ -71,10 +78,9 @@ uint64_t prng_next() {
     return xorshift64star();
 }
 
-void timeseed_prng() {
-    struct timeval now;
-    gettimeofday(&now, (void*) 0);
-    seed_prng(now.tv_usec);
+uint64_t randInt(uint64_t min, uint64_t max) {
+    uint64_t r = prng_next() % (max - min);
+    return r + min;
 }
 
 float radicalInverse(int base, int num) {

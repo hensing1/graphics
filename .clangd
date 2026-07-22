@@ -25,3 +25,9 @@ If:
   PathMatch: src/noise\.h
 CompileFlags:
   Add: [-DIMPL_NOISE_H]
+
+---
+If:
+  PathMatch: src/io\.h
+CompileFlags:
+  Add: [-DIMPL_IO_H]

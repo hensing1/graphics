@@ -6,15 +6,16 @@
 #include <math.h>
 
 #define IMPL_COLOR_H
+#define IMPL_IO_H
 #define IMPL_MATRIX_H
-#define IMPL_RASTERIZE_H
 #define IMPL_NOISE_H
+#define IMPL_RASTERIZE_H
 
-#include "src/automata.h"
 #include "src/color.h"
+#include "src/io.h"
 #include "src/matrix.h"
-#include "src/rasterize.h"
 #include "src/noise.h"
+#include "src/rasterize.h"
 
 /// point lerp
 point_t plerp(point_t p1, point_t p2, float u) {
@@ -115,7 +116,6 @@ void linear_gradient(image_t image, rgb_t col1, rgb_t col2) {
 }
 
 void bezier_gradient(image_t image, rgb_t col1, rgb_t col2, rgb_t col3) {
-
   for (int i = 0; i < image.width; i++) {
     float t = (float)i / (image.width - 1);
     rgb_t c = rgb_bezier_quadratic(col1, col2, col3, t);
@@ -125,64 +125,161 @@ void bezier_gradient(image_t image, rgb_t col1, rgb_t col2, rgb_t col3) {
   }
 }
 
-void save_to_ppm(image_t image, char* filename) {
-  FILE* f = fopen(filename, "wb");
+bool wolfberd(bool* neighbors, uint8_t rule) {
+    int n = neighbors[-1] * 4 + neighbors[0] * 2 + neighbors[1];
+    uint8_t mask = 1 << n;
+    return (mask & rule) > 0;
+}
 
-  fprintf(f, "P6\n");  // magic number for ppm format
-  fprintf(f, "%d %d\n", image.width, image.height);
-  fprintf(f, "255\n");  // max color value
-
-  for (int y = 0; y < image.height; y++) {
-    for (int x = 0; x < image.width; x++) {
-      rgb_t p = get_pixel(image, x, y);
-      fputc((uint8_t)nearbyintf(p.r * 255), f);
-      fputc((uint8_t)nearbyintf(p.g * 255), f);
-      fputc((uint8_t)nearbyintf(p.b * 255), f);
+void draw_a_wolfberd(image_t image, uint8_t rule, bool random_init) {
+    bool* state = malloc(sizeof(bool) * (image.width + 2));
+    bool* next_state = malloc(sizeof(bool) * (image.width + 2));
+    if (random_init) {
+        timeseed_prng();
+        for (int i = 1; i < image.width+1; i++) {
+            state[i] = prng_next() & 1;
+        }
     }
-  }
+    else {
+        state[image.width / 2 + 1] = true;
+    }
+    for (int y = 0; y < image.height; y++) {
+        for (int x = 0; x < image.width; x++) {
+            if (state[x + 1]) {
+                set_pixel(image, x, y, WHITE);
+            }
+        }
+        state[0] = state[image.width];
+        state[image.width + 1] = state[1];
+        for (int x = 1; x < image.width+1; x++) {
+            next_state[x] = wolfberd((state + x), rule);
+        }
+        bool* tmp = state;
+        state = next_state;
+        next_state = tmp;
+    }
+    free(state);
+    free(next_state);
+}
 
-  fclose(f);
+typedef enum {
+    EMPTY,
+    UP,
+    RIGHT,
+    DOWN,
+    LEFT
+} CellState;
+
+#define CELL(maze, x, y, width) (maze[(y) * (width) + (x)])
+#define MAZE_PATH WHITE
+#define MAZE_WALL BLACK
+static int maze_exit = -1;
+
+void permute(CellState* dirs) {
+    for (int i = 0; i < 3; i++) {
+        int other = randInt(i, 4);
+        if (i == other) continue;
+        CellState tmp = dirs[i];
+        dirs[i] = dirs[other];
+        dirs[other] = tmp;
+    }
+}
+
+void maze_dfs(int x, int y, CellState* maze, size_t width, size_t height, CellState dir) {
+    CELL(maze, x, y, width) = dir;
+    CellState dirs[4] = {UP, RIGHT, DOWN, LEFT};
+    permute(dirs);
+    for (int i = 0; i < 4; i++) {
+        CellState dir = dirs[i];
+        // if (CELL(maze, x, y, width) == dir) continue;
+
+        int dx, dy;
+        switch(dir) {
+            case UP:
+                dx = 0; dy = 1;
+                break;
+            case RIGHT:
+                dx = -1; dy = 0;
+                break;
+            case DOWN:
+                dx = 0; dy = -1;
+                break;
+            case LEFT:
+                dx = 1; dy = 0;
+                break;
+            default:
+                assert(false);
+        }
+
+        int new_x = x + dx, new_y = y + dy;
+        if (new_x < 0 || new_x >= width || new_y < 0 || new_y >= height || CELL(maze, new_x, new_y, width) != EMPTY) {
+            continue;
+        }
+        maze_dfs(new_x, new_y, maze, width, height, dir);
+    }
+    if (y == height - 1 && maze_exit == -1) {
+        maze_exit = x;
+    }
+}
+
+void make_maze(size_t height, size_t width) {
+    CellState *maze = calloc(height * width, sizeof(CellState));
+    timeseed_prng();
+    uint64_t start = prng_next() % width;
+    maze_dfs(start, 0, maze, width, height, UP);
+
+    rgb_t* pixels = (rgb_t*)malloc(sizeof(rgb_t) * (2 * width + 1) * (2 * height + 1));
+    image_t image = {2 * width + 1, 2 * height + 1, pixels};
+    set_uniform(image, MAZE_WALL);
+
+    for(int x = 0; x < width; x++) {
+        for (int y = 0; y < height; y++) {
+            int px = 2 * x + 1, py = 2 * y + 1;
+            set_pixel(image, px, py, MAZE_PATH);
+            switch(CELL(maze, x, y, width)) {
+                case UP:
+                    set_pixel(image, px, py-1, MAZE_PATH);
+                    break;
+                case RIGHT:
+                    set_pixel(image, px+1, py, MAZE_PATH);
+                    break;
+                case DOWN:
+                    set_pixel(image, px, py+1, MAZE_PATH);
+                    break;
+                case LEFT:
+                    set_pixel(image, px-1, py, MAZE_PATH);
+                    break;
+                default:
+                    assert(false);
+            }
+        }
+    }
+    set_pixel(image, 2 * maze_exit + 1, 2 * height, MAZE_PATH);
+
+    save_to_ppm(image, "pics/smolmaze.ppm");
+    free(image.pixels);
+    free(maze);
 }
 
 int main(int argc, char *argv[]) {
-  const int width = 325;
-  const int height = 600;
+  // const int width = 512;
+  // const int height = 300;
 
-  const uint8_t rule = 31;
+  // const uint8_t rule = 184;
 
-  char filename[16];
-  snprintf(filename, 16, "wolfberd%03d.ppm", rule);
+  // char filename[21];
+  // snprintf(filename, 21, "pics/wolfberd%03d.ppm", rule);
 
-  rgb_t* pixels = (rgb_t*)malloc(sizeof(rgb_t) * width * height);
-  image_t image = {width, height, pixels};
-  set_uniform(image, BLACK);
+  // rgb_t* pixels = (rgb_t*)malloc(sizeof(rgb_t) * width * height);
+  // image_t image = {width, height, pixels};
+  // set_uniform(image, BLACK);
 
-  bool* state = malloc(sizeof(bool) * (width + 2));
-  bool* next_state = malloc(sizeof(bool) * (width + 2));
-  state[width / 2 + 1] = true;
-  for (int y = 0; y < height; y++) {
-      for (int x = 0; x < width; x++) {
-          if (state[x + 1]) {
-              set_pixel(image, x, y, WHITE);
-          }
-      }
-      for (int x = 1; x < width+1; x++) {
-          next_state[x] = wolfberd((state + x), rule);
-      }
-      bool* tmp = state;
-      state = next_state;
-      next_state = tmp;
 
-      state[0] = state[width];
-      state[width + 1] = state[1];
-  }
-  free(state);
-  free(next_state);
+  // save_to_ppm(image, filename);
+  // free(image.pixels);
 
-  save_to_ppm(image, filename);
-  free(image.pixels);
-
-  printf("Written %s.\n", filename);
+  // printf("Written %s.\n", filename);
+  make_maze(15, 15);
 
   return 0;
 }

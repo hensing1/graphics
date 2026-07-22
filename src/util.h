@@ -3,6 +3,6 @@
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #define max(a, b) ((a) > (b) ? (a) : (b))
-#define sgn(a) ((a) >= 0 ? 1 : -1)
+#define sgn(a)    ((a) >= 0 ? 1 : -1)
 
 #endif // !UTIL_H

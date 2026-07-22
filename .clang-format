@@ -1,0 +1,12 @@
+---
+AllowShortBlocksOnASingleLine: Always
+AllowShortIfStatementsOnASingleLine: true
+AllowShortLoopsOnASingleLine: true
+AlignConsecutiveAssignments:
+  Enabled: true
+AlignConsecutiveMacros:
+  Enabled: true
+BraceWrapping:
+  BeforeElse: true
+IndentCaseLabels: true
+IndentWidth: 3

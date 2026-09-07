@@ -1,5 +1,4 @@
 #include <complex.h>
-#include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -23,7 +22,7 @@ point_t plerp(point_t p1, point_t p2, float u) {
 }
 
 void draw_vector(image_t image, point_t start, point_t vec) {
-   point_t end = {roundf(start.x + vec.x), roundf(start.y + vec.y)};
+   point_t end = {round(start.x + vec.x), round(start.y + vec.y)};
    draw_line(image, start, end, WHITE);
    draw_cross(image, end.x, end.y, RED);
 }
@@ -45,7 +44,7 @@ void draw_bezier(image_t image, point_t p1, point_t p2, point_t p3,
       point_t b2 = plerp(a2, a3, u);
 
       point_t c1 = plerp(b1, b2, u);
-      set_pixel(image, nearbyintf(c1.x), nearbyintf(c1.y), WHITE);
+      set_pixel(image, round(c1.x), round(c1.y), WHITE);
    }
 }
 
@@ -61,8 +60,8 @@ void draw_hermite(image_t image, point_t p1, point_t t1, point_t p2,
       double h2 = 10 * -(u * u) * (1 - u);
       double h3 = (3 - 2 * u) * u * u;
 
-      point_t next = {nearbyint(h0 * p1.x + h1 * t1.x + h2 * t2.x + h3 * p2.x),
-                      nearbyint(h0 * p1.y + h1 * t1.y + h2 * t2.y + h3 * p2.y)};
+      point_t next = {round(h0 * p1.x + h1 * t1.x + h2 * t2.x + h3 * p2.x),
+                      round(h0 * p1.y + h1 * t1.y + h2 * t2.y + h3 * p2.y)};
       draw_line(image, prev, next, GREEN);
       prev = next;
    }
@@ -92,7 +91,7 @@ void mandelbrot(image_t image) {
          uint8_t d;
          if ((d = diverges(c, iterations))) {
             float u     = d / (float)iterations;
-            u           = pow(u, 0.4); // gamma correction
+            u           = pow(u, 0.4f); // gamma correction
             rgb_t color = rgb_bezier_quadratic(BLACK, BLUE, WHITE, u);
             set_pixel(image, x, y, color);
          }
@@ -249,24 +248,46 @@ void make_maze(size_t height, size_t width) {
    free(maze);
 }
 
+void checkerboard(const image_t img, const size_t square_size) {
+   for (size_t x = 0; x < img.width / square_size; x++) {
+      for (size_t y = 0; y < img.height / square_size; y++) {
+         for (size_t i = 0; i < square_size; i++) {
+            for (size_t j = 0; j < square_size; j++) {
+               set_pixel(img, square_size * x + i, square_size * y + j, (x + y) % 2 == 0 ? WHITE : BLACK);
+            }
+         }
+      }
+   }
+}
+
+void stripes(const image_t img, const size_t stripe_width) {
+   for (size_t x = 0; x < img.width / stripe_width; x++) {
+      for (size_t y = 0; y < img.height; y++) {
+         for (size_t i = 0; i < stripe_width; i++) {
+            set_pixel(img, stripe_width * x + i, y, x % 2 == 0 ? WHITE : BLACK);
+         }
+      }
+   }
+}
+
 int main(int argc, char *argv[]) {
-   // const int width = 512;
-   // const int height = 300;
+   // const int width = 65 * 8;
+   // const int height = 8 * 65;
+   const int width = 4000;
+   const int height = 4000;
 
-   // const uint8_t rule = 184;
+   char filename[] = "pics/mandelbrot.ppm";
 
-   // char filename[21];
-   // snprintf(filename, 21, "pics/wolfberd%03d.ppm", rule);
+   rgb_t* pixels = (rgb_t*)malloc(sizeof(rgb_t) * width * height);
+   image_t image = {width, height, pixels};
 
-   // rgb_t* pixels = (rgb_t*)malloc(sizeof(rgb_t) * width * height);
-   // image_t image = {width, height, pixels};
-   // set_uniform(image, BLACK);
+   // stripes(image, 8);
+   mandelbrot(image);
 
-   // save_to_ppm(image, filename);
-   // free(image.pixels);
+   save_to_ppm(image, filename);
+   free(image.pixels);
 
-   // printf("Written %s.\n", filename);
-   make_maze(15, 15);
+   printf("Written %s.\n", filename);
 
    return 0;
 }

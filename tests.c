@@ -69,7 +69,7 @@ void test_mat_norm() {
    mat_set(m, 1, 0, -3);
    mat_set(m, 2, 0, 4);
    float len = mat_l2(m);
-   assert(fabs(len - 5.385164807134504) < 1e-6);
+   assert(absf(len - 5.385164807134504) < 1e-6);
    assert(mat_l1(m) == 9);
    mat_free(m);
 }
@@ -86,15 +86,15 @@ void test_mat_qr() {
 
    for (size_t i = 0; i < 3; i++) {
       for (size_t j = 0; j < 3; j++) {
-         assert(fabsf(mat_val(m, i, j) - mat_val(m_rec, i, j)) < 1e-5);
+         assert(absf(mat_val(m, i, j) - mat_val(m_rec, i, j)) < 1e-5);
       }
    }
    matrix_t col1 = mat_submatrix(q, 0, 3, 0, 1);
    matrix_t col2 = mat_submatrix(q, 0, 3, 1, 2);
    matrix_t col3 = mat_submatrix(q, 0, 3, 2, 3);
-   assert(fabs(mat_dot(col1, col2)) < 1e-6);
-   assert(fabs(mat_dot(col2, col3)) < 1e-6);
-   assert(fabs(mat_dot(col3, col1)) < 1e-6);
+   assert(absf(mat_dot(col1, col2)) < 1e-6);
+   assert(absf(mat_dot(col2, col3)) < 1e-6);
+   assert(absf(mat_dot(col3, col1)) < 1e-6);
 
    mat_free(q);
    mat_free(r);

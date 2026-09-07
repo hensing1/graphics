@@ -1,14 +1,13 @@
 #ifndef RASTERIZE_H
 #define RASTERIZE_H
 
-#include <math.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
 
 #include "color.h"
+#include "maths.h"
 #include "matrix.h"
-#include "util.h"
 
 typedef struct {
    int width;
@@ -99,8 +98,8 @@ void draw_line(image_t image, point_t p1, point_t p2, rgb_t color) {
    int ady      = abs(dy);
    bool flip_xy = ady > adx;
 
-   int da = fmax(adx, ady);
-   int db = fmin(adx, ady);
+   int da = max(adx, ady);
+   int db = min(adx, ady);
 
    int e          = 2 * db - da;
    point_t offset = {0, 0};
@@ -120,13 +119,13 @@ void draw_line(image_t image, point_t p1, point_t p2, rgb_t color) {
 }
 
 static bounding_box_t calc_bounding_box(point_t *points, size_t n_points) {
-   bounding_box_t box = (bounding_box_t){(point_t){INFINITY, INFINITY},
-                                         (point_t){-INFINITY, -INFINITY}};
+   bounding_box_t box = (bounding_box_t){(point_t){inf, inf},
+                                         (point_t){-inf, -inf}};
    for (size_t i = 0; i < n_points; i++) {
-      box.top_left.x  = fminf(box.top_left.x, points[i].x);
-      box.top_left.y  = fminf(box.top_left.y, points[i].y);
-      box.btm_right.x = fmaxf(box.btm_right.x, points[i].x);
-      box.btm_right.y = fmaxf(box.btm_right.y, points[i].y);
+      box.top_left.x  = min(box.top_left.x, points[i].x);
+      box.top_left.y  = min(box.top_left.y, points[i].y);
+      box.btm_right.x = max(box.btm_right.x, points[i].x);
+      box.btm_right.y = max(box.btm_right.y, points[i].y);
    }
    return box;
 }
@@ -142,10 +141,10 @@ void draw_triangle_badly(image_t image, point_t p1, point_t p2, point_t p3,
    matrix_t q   = mat_qr(r, true);
    matrix_t q_t = mat_transpose(q);
 
-   for (int x = max(0, floorf(bb.top_left.x));
-        x <= min(image.width, ceilf(bb.btm_right.x)); x++) {
-      for (int y = max(0, floorf(bb.top_left.y));
-           y <= min(image.height, ceilf(bb.btm_right.y)); y++) {
+   for (int x = max(0, floor(bb.top_left.x));
+        x <= min(image.width, ceil(bb.btm_right.x)); x++) {
+      for (int y = max(0, floor(bb.top_left.y));
+           y <= min(image.height, ceil(bb.btm_right.y)); y++) {
          matrix_t point_vec = mat_init(3, 1, (float[3]){x, y, 1}, false);
          matrix_t lhs       = mat_mul(q_t, point_vec);
          matrix_t barycentric_coords = back_substitute(r, lhs);

@@ -1,7 +1,11 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
-#include "util.h"
+#ifdef IMPL_MATRIX_H
+#define IMPL_MATHS_H
+#endif
+
+#include "maths.h"
 
 #include <assert.h>
 #include <stdbool.h>
@@ -9,16 +13,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <math.h>
-
 typedef struct {
-   size_t height;
-   size_t width;
+   int height;
+   int width;
    float *data;
-   size_t data_height;
-   size_t data_width;
-   size_t offset_i;
-   size_t offset_j;
+   int data_height;
+   int data_width;
+   int offset_i;
+   int offset_j;
    bool transposed;
    int *ref_counter;
 } matrix_t;
@@ -30,14 +32,14 @@ typedef struct {
 #define mat_set(m, i, j, val)                                                  \
    (m.data[m.data_width * ((i) + m.offset_i) + ((j) + m.offset_j)] = (val))
 
-matrix_t mat_init(size_t height, size_t width, float *data,
+matrix_t mat_init(int height, int width, float *data,
                   bool use_ref_counter);
-matrix_t mat_zero(size_t height, size_t width);
-matrix_t mat_full(size_t height, size_t width, float v);
-matrix_t mat_eye(size_t height, size_t width);
+matrix_t mat_zero(int height, int width);
+matrix_t mat_full(int height, int width, float v);
+matrix_t mat_eye(int height, int width);
 
-matrix_t mat_submatrix(matrix_t m, size_t start_i, size_t end_i, size_t start_j,
-                       size_t end_j);
+matrix_t mat_submatrix(matrix_t m, int start_i, int end_i, int start_j,
+                       int end_j);
 matrix_t mat_clone(matrix_t m);
 
 matrix_t mat_transpose(matrix_t m);
@@ -76,7 +78,7 @@ void mat_free(matrix_t m);
 #ifndef IMPL_MATRIX_H_DONE
 #define IMPL_MATRIX_H_DONE
 
-matrix_t mat_init(size_t height, size_t width, float *data,
+matrix_t mat_init(int height, int width, float *data,
                   bool use_ref_counter) {
    int *ref_counter;
    if (use_ref_counter) {
@@ -96,11 +98,11 @@ matrix_t mat_init(size_t height, size_t width, float *data,
                      .ref_counter = ref_counter};
 }
 
-matrix_t mat_zero(size_t height, size_t width) {
+matrix_t mat_zero(int height, int width) {
    float *values = calloc(sizeof(float), height * width);
    if (!values) {
       char *err;
-      asprintf(&err, "Could not allocate matrix of size %lux%lu", height,
+      asprintf(&err, "Could not allocate matrix of size %ix%i", height,
                width);
       perror(err);
       free(err);
@@ -109,24 +111,24 @@ matrix_t mat_zero(size_t height, size_t width) {
    return mat_init(height, width, values, true);
 }
 
-matrix_t mat_full(size_t height, size_t width, float v) {
+matrix_t mat_full(int height, int width, float v) {
    matrix_t m = mat_zero(height, width);
-   for (size_t i = 0; i < height; i++) {
-      for (size_t j = 0; j < width; j++) { mat_set(m, i, j, v); }
+   for (int i = 0; i < height; i++) {
+      for (int j = 0; j < width; j++) { mat_set(m, i, j, v); }
    }
    return m;
 }
 
-matrix_t mat_eye(size_t height, size_t width) {
+matrix_t mat_eye(int height, int width) {
    matrix_t id = mat_zero(height, width);
-   size_t k    = min(height, width);
-   for (size_t i = 0; i < k; i++) { mat_set(id, i, i, 1); }
+   int k    = min(height, width);
+   for (int i = 0; i < k; i++) { mat_set(id, i, i, 1); }
    return id;
 }
 
 matrix_t mat_transpose(matrix_t m) {
    matrix_t m_t = mat_submatrix(m, 0, m.height, 0, m.width);
-   size_t tmp   = m_t.height;
+   int tmp   = m_t.height;
    m_t.height   = m_t.width;
    m_t.width    = tmp;
 
@@ -139,8 +141,8 @@ matrix_t mat_transpose(matrix_t m) {
    return m_t;
 }
 
-matrix_t mat_submatrix(matrix_t m, size_t start_i, size_t end_i, size_t start_j,
-                       size_t end_j) {
+matrix_t mat_submatrix(matrix_t m, int start_i, int end_i, int start_j,
+                       int end_j) {
    assert(start_i < end_i);
    assert(start_j < end_j);
    assert(end_i <= m.offset_i + m.height);
@@ -171,8 +173,8 @@ matrix_t mat_clone(matrix_t m) {
                          .offset_j    = 0,
                          .transposed  = false,
                          .ref_counter = ref_counter};
-   for (size_t i = 0; i < m.height; i++) {
-      for (size_t j = 0; j < m.width; j++) {
+   for (int i = 0; i < m.height; i++) {
+      for (int j = 0; j < m.width; j++) {
          mat_set(clone, i, j, mat_val(m, i, j));
       }
    }
@@ -180,8 +182,8 @@ matrix_t mat_clone(matrix_t m) {
 }
 
 void mat_scale(matrix_t m, float d) {
-   for (size_t i = 0; i < m.height; i++) {
-      for (size_t j = 0; j < m.width; j++) {
+   for (int i = 0; i < m.height; i++) {
+      for (int j = 0; j < m.width; j++) {
          mat_set(m, i, j, d * mat_val(m, i, j));
       }
    }
@@ -190,8 +192,8 @@ void mat_scale(matrix_t m, float d) {
 void mat_add(matrix_t a, matrix_t b) {
    assert(a.height == b.height);
    assert(a.width == b.width);
-   for (size_t i = 0; i < a.height; i++) {
-      for (size_t j = 0; j < a.width; j++) {
+   for (int i = 0; i < a.height; i++) {
+      for (int j = 0; j < a.width; j++) {
          mat_set(a, i, j, mat_val(a, i, j) + mat_val(b, i, j));
       }
    }
@@ -200,10 +202,10 @@ void mat_add(matrix_t a, matrix_t b) {
 matrix_t mat_mul(matrix_t a, matrix_t b) {
    assert(a.width == b.height);
    matrix_t new = mat_zero(a.height, b.width);
-   for (size_t i = 0; i < new.height; i++) {
-      for (size_t j = 0; j < new.width; j++) {
+   for (int i = 0; i < new.height; i++) {
+      for (int j = 0; j < new.width; j++) {
          float val = 0;
-         for (size_t k = 0; k < a.width; k++) {
+         for (int k = 0; k < a.width; k++) {
             val += mat_val(a, i, k) * mat_val(b, k, j);
          }
          mat_set(new, i, j, val);
@@ -216,8 +218,8 @@ matrix_t mat_outer(matrix_t a, matrix_t b) {
    assert(a.width == 1);
    assert(b.width == 1);
    matrix_t new = mat_zero(a.height, b.height);
-   for (size_t i = 0; i < new.height; i++) {
-      for (size_t j = 0; j < new.width; j++) {
+   for (int i = 0; i < new.height; i++) {
+      for (int j = 0; j < new.width; j++) {
          mat_set(new, i, j, mat_val(a, i, 0) * mat_val(b, j, 0));
       }
    }
@@ -229,7 +231,7 @@ float mat_dot(matrix_t a, matrix_t b) {
    assert(b.width == 1);
    assert(a.height == b.height);
    float res = 0;
-   for (size_t i = 0; i < a.height; i++) {
+   for (int i = 0; i < a.height; i++) {
       res += mat_val(a, i, 0) * mat_val(b, i, 0);
    }
    return res;
@@ -238,32 +240,32 @@ float mat_dot(matrix_t a, matrix_t b) {
 float mat_l1(matrix_t m) {
    assert(m.width == 1);
    float norm = 0;
-   for (size_t i = 0; i < m.height; i++) { norm += fabsf(mat_val(m, i, 0)); }
+   for (int i = 0; i < m.height; i++) { norm += absf(mat_val(m, i, 0)); }
    return norm;
 }
 
 float mat_l2_squared(matrix_t m) {
    assert(m.width == 1);
    float norm = 0;
-   for (size_t i = 0; i < m.height; i++) {
+   for (int i = 0; i < m.height; i++) {
       norm += mat_val(m, i, 0) * mat_val(m, i, 0);
    }
    return norm;
 }
 
-float mat_l2(matrix_t m) { return sqrtf(mat_l2_squared(m)); }
+float mat_l2(matrix_t m) { return sqrt(mat_l2_squared(m)); }
 
 float mat_trace(matrix_t m) {
    assert(m.height == m.width);
    float sum = 0;
-   for (size_t i = 0; i < m.height; i++) { sum += mat_val(m, i, i); }
+   for (int i = 0; i < m.height; i++) { sum += mat_val(m, i, i); }
    return sum;
 }
 
 matrix_t mat_qr(matrix_t m, bool compute_q) {
    matrix_t q_t;
    if (compute_q) { q_t = mat_eye(m.height, m.width); }
-   for (size_t k = 0; k < m.width; k++) {
+   for (int k = 0; k < m.width; k++) {
       matrix_t x   = mat_submatrix(m, k, m.height, k, k + 1);
       matrix_t v_k = mat_clone(x);
       mat_set(v_k, 0, 0, sgn(mat_val(x, 0, 0)) * mat_l2(x) + mat_val(x, 0, 0));
@@ -319,8 +321,8 @@ matrix_t back_substitute(matrix_t r, matrix_t y) {
 
 void mat_print(matrix_t m) {
    printf("---\n");
-   for (size_t i = 0; i < m.height; i++) {
-      for (size_t j = 0; j < m.width; j++) { printf("%f  ", mat_val(m, i, j)); }
+   for (int i = 0; i < m.height; i++) {
+      for (int j = 0; j < m.width; j++) { printf("%f  ", mat_val(m, i, j)); }
       printf("\n");
    }
    printf("---\n");

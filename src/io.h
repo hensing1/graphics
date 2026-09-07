@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "maths.h"
 #include "rasterize.h"
 
 void save_to_ppm(image_t image, char *filename);
@@ -24,9 +25,9 @@ void save_to_ppm(image_t image, char *filename) {
    for (int y = 0; y < image.height; y++) {
       for (int x = 0; x < image.width; x++) {
          rgb_t p = get_pixel(image, x, y);
-         fputc((uint8_t)nearbyintf(p.r * 255), f);
-         fputc((uint8_t)nearbyintf(p.g * 255), f);
-         fputc((uint8_t)nearbyintf(p.b * 255), f);
+         fputc((uint8_t)round(p.r * 255), f);
+         fputc((uint8_t)round(p.g * 255), f);
+         fputc((uint8_t)round(p.b * 255), f);
       }
    }
 

@@ -1,7 +1,7 @@
 #ifndef COLOR_H
 #define COLOR_H
 
-#include <math.h>
+#include "maths.h"
 
 typedef struct {
    float r;
@@ -64,8 +64,8 @@ rgb_t rgb_bezier_quadratic(rgb_t c1, rgb_t c2, rgb_t c3, float u) {
 
 hsv_t rgb2hsv(rgb_t rgb) {
    hsv_t hsv;
-   float min_rgb = fmin(fmin(rgb.r, rgb.g), rgb.b);
-   float max_rgb = fmax(fmax(rgb.r, rgb.g), rgb.b);
+   float min_rgb = min(min(rgb.r, rgb.g), rgb.b);
+   float max_rgb = max(max(rgb.r, rgb.g), rgb.b);
 
    float span = max_rgb - min_rgb;
    if (span == 0) { // r == g == b

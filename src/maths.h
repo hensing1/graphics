@@ -1,8 +1,6 @@
 #ifndef MATHS_H
 #define MATHS_H
 
-#include <stdio.h>
-
 #define E 2.718281828459045
 #define PI 3.141592653589793
 #define TAU 6.283185307179586

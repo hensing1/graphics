@@ -11,6 +11,12 @@ CompileFlags:
   Add: [-DIMPL_COLOR_H]
 ---
 If:
+  PathMatch: src/maths\.h
+
+CompileFlags:
+  Add: [-DIMPL_MATHS_H]
+---
+If:
   PathMatch: src/matrix\.h
 
 CompileFlags:

@@ -4,7 +4,40 @@
 #define IMPL_NOISE_H
 #include "src/noise.h"
 
+#include <math.h>
+
+#define IMPL_MATHS_H
+#include "src/maths.h"
+
+
+void the_e() {
+   // printf("%f\n", exp(1));
+   // printf("%f\n", expf(1));
+   printf("%f\n", ln(E));
+   printf("%f\n", logf(E));
+   printf("%f %f\n", logf(1), ln(exp(0)));
+   printf("%f %f\n", logf(1/E), ln(exp(-1)));
+   printf("%f %f\n", logf(1/(E*E)), ln(exp(-2)));
+   printf("%f %f\n", logf(1/(E*E*E)), ln(exp(-3)));
+   printf("%f %f\n", logf(1/(E*E*E*E)), ln(exp(-4)));
+   printf("%f %f\n", logf(1/(E*E*E*E*E)), ln(exp(-5)));
+   printf("%f %f\n", logf(1/(E*E*E*E*E*E)), ln(exp(-6)));
+   printf("%f %f\n", logf(1/(E*E*E*E*E*E*E)), ln(exp(-7)));
+   printf("%f %f\n", logf(1/(E*E*E*E*E*E*E*E)), ln(exp(-8)));
+   printf("%f %f\n", logf(1/(E*E*E*E*E*E*E*E*E)), ln(exp(-9)));
+}
+
+void the_pow() {
+   printf("%i\n", pow(2, 3));
+   printf("%f\n", pow(2.5f, 4));
+   printf("%f\n", pow(2.f, 2.f));
+   printf("%f\n", pow(2.f, 0.5f));
+   printf("%f\n", sqrt(2));
+}
+
 int main() {
+   the_pow();
+   return 0;
 
    struct timeval now, stop;
    gettimeofday(&stop, NULL);

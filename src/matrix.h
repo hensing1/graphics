@@ -121,7 +121,7 @@ matrix_t mat_full(int height, int width, float v) {
 
 matrix_t mat_eye(int height, int width) {
    matrix_t id = mat_zero(height, width);
-   int k    = min(height, width);
+   int k = min(height, width);
    for (int i = 0; i < k; i++) { mat_set(id, i, i, 1); }
    return id;
 }

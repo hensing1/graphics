@@ -273,18 +273,34 @@ void stripes(const image_t img, const size_t stripe_width) {
 int main(int argc, char *argv[]) {
    // const int width = 65 * 8;
    // const int height = 8 * 65;
-   const int width = 4000;
-   const int height = 4000;
+   const int height = 33;
 
-   char filename[] = "pics/mandelbrot.ppm";
+   char filename[] = "pics/h.ppm";
+
+   letter_t* letters = load_bs("./assets/fonts/hi.bs");
+
+   char text['~' - ' ' + 2];
+   int width = 0;
+   for (char c = '!'; c <= '~'; c++) {
+      text[c - '!'] = c;
+      width += letters[c - '!'].width + 1;
+   }
+   text['~'-' '+1] = '\0';
+
+   width *= 3;
+   width += 18;
 
    rgb_t* pixels = (rgb_t*)malloc(sizeof(rgb_t) * width * height);
    image_t image = {width, height, pixels};
-
-   // stripes(image, 8);
-   mandelbrot(image);
+   set_uniform(image, BLACK);
+   draw_text(image, 9, 9, letters, text, RED, 3);
 
    save_to_ppm(image, filename);
+
+   for (int i = 0; i < '~' - ' ' + 1; i++) {
+      if (letters[i].alpha) { free(letters[i].alpha); }
+   }
+   free(letters);
    free(image.pixels);
 
    printf("Written %s.\n", filename);

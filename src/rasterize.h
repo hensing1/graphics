@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "color.h"
 #include "maths.h"
@@ -25,6 +26,14 @@ typedef struct {
    point_t btm_right;
 } bounding_box_t;
 
+typedef struct {
+   int width;
+   int height;
+   unsigned char* alpha;
+   int codepoint;
+} letter_t;
+
+
 void set_pixel(image_t image, int x, int y, rgb_t pixel);
 rgb_t get_pixel(image_t image, size_t x, size_t y);
 
@@ -39,6 +48,12 @@ void draw_line(image_t image, point_t p1, point_t p2, rgb_t color);
  */
 void draw_triangle_badly(image_t image, point_t p1, point_t p2, point_t p3,
                          rgb_t color);
+
+// ------- Text -------
+
+letter_t* load_bs(char* file);
+void draw_letter(image_t image, int x, int y, letter_t letter, rgb_t color, int scale);
+void draw_text(image_t image, int x, int y, letter_t* letters, char* text, rgb_t color, int scale);
 
 #endif /* #ifndef RASTERIZE_H */
 
@@ -166,6 +181,117 @@ void draw_triangle_badly(image_t image, point_t p1, point_t p2, point_t p3,
 
    mat_free(q);
    mat_free(q_t);
+}
+
+unsigned int get_codepoint_from_utf8(char* symbol) {
+   int c;
+   switch(symbol[0] & 0b11110000) {
+   case 0b11110000:
+      c = symbol[0] & 0b00000111;
+      c <<= 6;
+      c |= symbol[1] & 0b00111111;
+      c <<= 6;
+      c |= symbol[2] & 0b00111111;
+      c <<= 6;
+      c |= symbol[3] & 0b00111111;
+      break;
+   case 0b11100000:
+      c = symbol[0] & 0b00001111;
+      c <<= 6;
+      c |= symbol[1] & 0b00111111;
+      c <<= 6;
+      c |= symbol[2] & 0b00111111;
+      break;
+   case 0b11000000:
+      c = symbol[0] & 0b00011111;
+      c <<= 6;
+      c |= symbol[1] & 0b00111111;
+      break;
+   default:
+      c = symbol[0];
+   }
+   return c;
+}
+
+letter_t* load_bs(char* file) {
+   FILE* fp;
+   char* line = NULL;
+   size_t len = 0;
+   ssize_t read;
+
+   fp = fopen(file, "r");
+   if (fp == NULL) {
+      perror("fopen");
+      exit(EXIT_FAILURE);
+   }
+
+   read = getline(&line, &len, fp);
+   if (strncmp(line, "BitSchrift", 10) != 0) {
+      perror("keine gültige .bs-Datei :(");
+      exit(EXIT_FAILURE);
+   }
+
+   getline(&line, &len, fp);
+   letter_t* letters = calloc('~' - ' ' + 1, sizeof(letter_t));
+   while ((read = getline(&line, &len, fp)) > 1) {
+      char symbol[read];
+      strlcpy(symbol, line, read);
+      int codepoint = get_codepoint_from_utf8(symbol);
+      int width = getline(&line, &len, fp) - 1;
+      int height = 0;
+      int capacity = width * 5;
+      unsigned char* alpha = malloc(capacity);
+      int i = 0;
+      do {
+         if (i == capacity) {
+            capacity += width * 5;
+            alpha = realloc(alpha, capacity);
+         }
+         for (int j = 0; j < width; j++, i++) {
+            alpha[i] = line[j] == '0' ? 0 : 255;
+         }
+         height++;
+      } while ((read = getline(&line, &len, fp)) > 1);
+
+      if (codepoint > 127) {
+         printf("Skipping symbol %s\n", symbol);
+         free(alpha);
+         continue;
+      }
+
+      letters[codepoint - ' '] = (letter_t) {
+         .codepoint = codepoint,
+         .width = width,
+         .height = height,
+         .alpha = alpha
+      };
+   } 
+  
+   free(line);
+   return letters;
+}
+
+void draw_letter(image_t image, int x, int y, letter_t letter, rgb_t color, int scale) {
+   for (int i = 0; i < letter.width; i++) {
+      for (int j = 0; j < letter.height; j++) {
+         unsigned char val = letter.alpha[j * letter.width + i];
+         if (val > 0) {
+            for (int ii = 0; ii < scale; ii++) {
+               for (int jj = 0; jj < scale; jj++) {
+                  set_pixel(image, x + i * scale + ii, y + j * scale + jj, color);
+               }
+            }
+         }
+      }
+   }
+}
+
+void draw_text(image_t image, int x, int y, letter_t* letters, char* text, rgb_t color, int scale) {
+   int offset = 0;
+   for (int i = 0; text[i] != '\0'; i++) {
+      draw_letter(image, x + offset, y, letters[text[i] - ' '], color, scale);
+      offset += (letters[text[i] - ' '].width + 1) * scale;
+   }
 }
 
 #endif /* #ifndef IMPL_RASTERIZE_H_DONE */

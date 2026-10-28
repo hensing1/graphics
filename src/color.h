@@ -15,11 +15,12 @@ typedef struct {
    float v;
 } hsv_t;
 
-#define BLACK (rgb_t){0., 0., 0.}
-#define BLUE  (rgb_t){0., 0., 1.}
-#define GREEN (rgb_t){0., 1., 0.}
-#define RED   (rgb_t){1., 0., 0.}
-#define WHITE (rgb_t){1., 1., 1.}
+#define BLACK  (rgb_t){0., 0., 0.}
+#define BLUE   (rgb_t){0., 0., 1.}
+#define GREEN  (rgb_t){0., 1., 0.}
+#define RED    (rgb_t){1., 0., 0.}
+#define WHITE  (rgb_t){1., 1., 1.}
+#define YELLOW (rgb_t){1., 1., 0.}
 
 rgb_t rgb_lerp(rgb_t a, rgb_t b, float u);
 rgb_t rgb_bezier_cubic(rgb_t c1, rgb_t c2, rgb_t c3, rgb_t c4, float u);

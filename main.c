@@ -273,27 +273,54 @@ void stripes(const image_t img, const size_t stripe_width) {
 int main(int argc, char *argv[]) {
    // const int width = 65 * 8;
    // const int height = 8 * 65;
-   const int height = 33;
+   // const int height = 33;
 
-   char filename[] = "pics/h.ppm";
+   char filename[] = "pics/beemoviescript.ppm";
 
-   letter_t* letters = load_bs("./assets/fonts/hi.bs");
+   letter_t* letters = load_bs("./assets/fonts/verytiny.bs");
 
-   char text['~' - ' ' + 2];
-   int width = 0;
-   for (char c = '!'; c <= '~'; c++) {
-      text[c - '!'] = c;
-      width += letters[c - '!'].width + 1;
+   // char text['~' - ' ' + 2];
+   int maxWidth = 0;
+   // char* text = "I drink, therefore I don't think, therefore I don't am.";
+   // char* text = "sphinx of black quartz, judge my vow";
+   // char* text = "franz jagt im komplett verwahrlosten taxi quer durch bayern";
+   // char* lines[] = {
+   //    "According to all known laws of aviation, there is no way a bee should be able to fly.",
+   //    "Its wings are too small to get its fat little body off the ground.",
+   //    "The bee, of course, flies anyway because bees don't care what humans think is impossible.",
+   //    "Yellow, black. Yellow, black. Yellow, black. Yellow, black."
+   // };
+   FILE* fp = fopen("./assets/beemovie.txt", "r");
+   char* lines[1363];
+   size_t len = 0;
+   for (int i = 0; i < 1363; i++) {
+      ssize_t r = getline(&lines[i], &len, fp);
+      lines[i][r-1] = 0;
    }
-   text['~'-' '+1] = '\0';
+   for (int i = 0; i < 1363; i++){
+      int currWidth = 0;
+      for (int j = 0; j < strlen(lines[i]); j++)
+         currWidth += letters[lines[i][j] - '!'+1].width + 1;
+      maxWidth = max(maxWidth, currWidth);
+   }
+   // for (char c = '!'; c <= '~'; c++) {
+   //    text[c - '!'] = c;
+   //    width += letters[c - '!' + 1].width + 1;
+   // }
+   // text['~'-' '+1] = '\0';
 
-   width *= 3;
-   width += 18;
+   maxWidth--;
+   // maxWidth *= 3;
+   maxWidth += 6;
 
-   rgb_t* pixels = (rgb_t*)malloc(sizeof(rgb_t) * width * height);
-   image_t image = {width, height, pixels};
+   int height = 1363 * 5 + 1362 * 3 + 2 * 3;
+
+   rgb_t* pixels = (rgb_t*)malloc(sizeof(rgb_t) * maxWidth * height);
+   image_t image = {maxWidth, height, pixels};
    set_uniform(image, BLACK);
-   draw_text(image, 9, 9, letters, text, RED, 3);
+   for (int i = 0; i < 1363; i++) {
+      draw_text(image, 3, 3 + 8*i, letters, lines[i], YELLOW, 1);
+   }
 
    save_to_ppm(image, filename);
 

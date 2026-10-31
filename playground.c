@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <stdio.h>
 #include <sys/time.h>
 
@@ -9,6 +10,16 @@
 #define IMPL_MATHS_H
 #include "src/maths.h"
 
+#include "src/datastructures.h"
+#undef DEFAULT_ARRAY_CAPACITY
+#define DEFAULT_ARRAY_CAPACITY 4
+DEFINE_ARRAY(int, int)
+IMPLEMENT_ARRAY(int, int)
+
+#undef DEFAULT_ARRAY_CAPACITY
+#define DEFAULT_ARRAY_CAPACITY 12
+DEFINE_ARRAY(char*, string)
+IMPLEMENT_ARRAY(char*, string)
 
 void the_e() {
    // printf("%f\n", exp(1));
@@ -36,6 +47,47 @@ void the_pow() {
 }
 
 int main() {
+   int_array_t arr = int_array_init();
+   int_array_insert(&arr, 1, 0);
+   int_array_insert(&arr, 1, 0);
+   int_array_insert(&arr, 1, 0);
+   int_array_insert(&arr, 1, 0);
+   int_array_insert(&arr, 2, 0);
+   int_array_insert(&arr, 3, 0);
+   int_array_insert(&arr, 3, 0);
+   int_array_insert(&arr, 4, 0);
+   int_array_insert(&arr, 9, 0);
+   int_array_insert(&arr, 2, 0);
+   int_array_insert(&arr, 3, 0);
+   int_array_insert(&arr, 3, 0);
+   int_array_insert(&arr, 4, 0);
+   int_array_insert(&arr, 9, 0);
+   int_array_insert(&arr, 2, 0);
+   int_array_insert(&arr, 3, 0);
+   int_array_insert(&arr, 3, 0);
+   int_array_insert(&arr, 4, 0);
+   int_array_insert(&arr, 9, 0);
+   int_array_insert(&arr, 2, 0);
+   int_array_insert(&arr, 3, 0);
+   int_array_insert(&arr, 3, 0);
+   int_array_insert(&arr, 4, 0);
+   int_array_insert(&arr, 9, 0);
+   printf("%i\n", int_array_pop(&arr));
+   printf("%i\n", int_array_pop(&arr));
+   printf("%i\n", int_array_pop(&arr));
+   printf("%i\n", int_array_pop(&arr));
+   printf("%i\n", int_array_pop(&arr));
+   for (int i = 0; i < arr.count; i++) {
+      printf("%i\n", arr.items[i]);
+   }
+   printf("capacity of int array: %i\n", arr.capacity);
+
+   string_array_t string_arr = string_array_init();
+   string_array_push(&string_arr, "güten mürgen");
+   printf("capacity of string array: %i\n", string_arr.capacity);
+
+   return 0;
+
    the_pow();
    return 0;
 
